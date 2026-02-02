@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\\\laragon\\\\www\\\\doorguard-front\")",
+      "Bash(dir:*)",
+      "Bash(php -v:*)",
+      "Bash(composer:*)",
+      "Bash(\"c:\\\\laragon\\\\bin\\\\php\\\\php-8.4.12-nts-Win32-vs17-x64\\\\php.exe\":*)",
+      "Bash(export PATH=\"/c/laragon/bin/php/php-8.4.12-nts-Win32-vs17-x64:$PATH\")",
+      "Bash(/c/laragon/bin/php/php-8.4.12-nts-Win32-vs17-x64/php.exe:*)",
+      "Bash(test:*)",
+      "Bash(curl:*)",
+      "Bash(TOKEN=\"1|LyjqpVmMd7EGgUnzDw3GZVpX0AoxQXyvB1IvB1UQ783d3aa2\")",
+      "Bash(npx next build:*)"
+    ]
+  }
+}
