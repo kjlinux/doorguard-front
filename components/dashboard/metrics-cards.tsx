@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { Activity, DoorOpen, CreditCard, Wifi } from "lucide-react"
+import { Activity, DoorOpen, Wifi } from "lucide-react"
 import { MetricsData } from "@/lib/types"
 
 interface MetricsCardsProps {
@@ -19,25 +19,17 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
       bgColor: "bg-primary/10",
     },
     {
-      title: "Portes ouvertes",
-      value: metrics.openDoors.toString(),
-      description: "Actuellement ouvertes",
+      title: "Capteurs ouverts",
+      value: metrics.openSensors.toString(),
+      description: "Actuellement ouverts",
       icon: DoorOpen,
       color: "text-warning",
       bgColor: "bg-warning/10",
     },
     {
-      title: "Cartes uniques",
-      value: metrics.uniqueCards.toString(),
-      description: "Cartes d'acces actives",
-      icon: CreditCard,
-      color: "text-chart-2",
-      bgColor: "bg-chart-2/10",
-    },
-    {
       title: "Capteurs en ligne",
-      value: `${metrics.sensorsOnline}/5`,
-      description: "Etat de connexion",
+      value: metrics.sensorsOnline.toString(),
+      description: "Actuellement connectes",
       icon: Wifi,
       color: "text-success",
       bgColor: "bg-success/10",
@@ -45,7 +37,7 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-4">
       {cards.map((card) => (
         <Card key={card.title} className="border-border bg-card">
           <CardContent className="p-4">

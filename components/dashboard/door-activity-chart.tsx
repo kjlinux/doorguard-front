@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface DoorActivityChartProps {
-  data: { door: string; events: number }[]
+  data: { sensor: string; events: number }[]
 }
 
 export function DoorActivityChart({ data }: DoorActivityChartProps) {
@@ -39,7 +39,7 @@ export function DoorActivityChart({ data }: DoorActivityChartProps) {
               />
               <YAxis
                 type="category"
-                dataKey="door"
+                dataKey="sensor"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#71717a", fontSize: 11 }}

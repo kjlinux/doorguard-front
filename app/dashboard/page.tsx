@@ -8,17 +8,17 @@ import { ActivityChart } from "@/components/dashboard/activity-chart"
 import { DoorActivityChart } from "@/components/dashboard/door-activity-chart"
 import { DoorEventsTable } from "@/components/dashboard/door-events-table"
 import { isAuthenticated, getMetrics, getEvents } from "@/lib/api"
-import { DoorEvent, MetricsData } from "@/lib/types"
-import { useDoorEvents } from "@/hooks/use-door-events"
+import { SensorEvent, MetricsData } from "@/lib/types"
+import { useSensorEvents } from "@/hooks/use-sensor-events"
 
 export default function DashboardPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [fetchedEvents, setFetchedEvents] = useState<DoorEvent[]>([])
+  const [fetchedEvents, setFetchedEvents] = useState<SensorEvent[]>([])
   const [metrics, setMetrics] = useState<MetricsData | null>(null)
 
   // Real-time events via WebSocket (merges with fetched events)
-  const { events, connected } = useDoorEvents(fetchedEvents)
+  const { events, connected } = useSensorEvents(fetchedEvents)
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -86,7 +86,7 @@ export default function DashboardPage() {
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ActivityChart data={metrics.hourlyActivity} />
-            <DoorActivityChart data={metrics.doorActivity} />
+            <DoorActivityChart data={metrics.sensorActivity} />
           </div>
 
           {/* Events Table */}

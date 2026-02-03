@@ -2,11 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { DoorEvent } from "@/lib/types"
+import { SensorEvent } from "@/lib/types"
 import { DoorOpen, DoorClosed, Clock } from "lucide-react"
 
 interface DoorEventsTableProps {
-  events: DoorEvent[]
+  events: SensorEvent[]
   connected?: boolean
 }
 
@@ -73,7 +73,7 @@ export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
                         )}
                       </div>
                       <span className="text-sm text-foreground font-medium">
-                        {event.doorName}
+                        {event.sensorName}
                       </span>
                     </div>
                   </td>
@@ -93,8 +93,8 @@ export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
                     <div className="flex items-center gap-2">
                       <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-foreground">{formatTime(event.timestamp)}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(event.timestamp)}</p>
+                        <p className="text-sm text-foreground">{formatTime(event.detectedAt)}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(event.detectedAt)}</p>
                       </div>
                     </div>
                   </td>
