@@ -2,15 +2,15 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { DoorEvent } from "@/lib/types"
-import { DoorOpen, DoorClosed, Clock } from "lucide-react"
+import { SensorEvent } from "@/lib/types"
+import { DoorOpen, DoorClosed, Clock, MapPin } from "lucide-react"
 
-interface DoorEventsTableProps {
-  events: DoorEvent[]
+interface SensorEventsTableProps {
+  events: SensorEvent[]
   connected?: boolean
 }
 
-export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
+export function SensorEventsTable({ events, connected }: SensorEventsTableProps) {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], {
       hour: "2-digit",
@@ -35,7 +35,7 @@ export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
               Evenements recents
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Activite d'acces aux portes en temps reel
+              Détections des capteurs en temps réel
             </p>
           </div>
           <Badge variant="outline" className={`text-xs ${connected ? "border-green-500/30 text-green-500" : "border-primary/30 text-primary"}`}>
@@ -50,7 +50,7 @@ export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Porte
+                  Capteur
                 </th>
                 <th className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Statut
@@ -72,9 +72,15 @@ export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
                           <DoorClosed className="h-4 w-4 text-muted-foreground" />
                         )}
                       </div>
-                      <span className="text-sm text-foreground font-medium">
-                        {event.doorName}
-                      </span>
+                      <div>
+                        <p className="text-sm text-foreground font-medium">
+                          {event.sensorName}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          {event.sensorLocation}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td className="py-3 px-2">
@@ -86,15 +92,15 @@ export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
                           : "bg-secondary text-muted-foreground"
                       }
                     >
-                      {event.status === "open" ? "Ouverte" : "Fermee"}
+                      {event.status === "open" ? "Ouvert" : "Fermé"}
                     </Badge>
                   </td>
                   <td className="py-3 px-2">
                     <div className="flex items-center gap-2">
                       <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-foreground">{formatTime(event.timestamp)}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(event.timestamp)}</p>
+                        <p className="text-sm text-foreground">{formatTime(event.detectedAt)}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(event.detectedAt)}</p>
                       </div>
                     </div>
                   </td>

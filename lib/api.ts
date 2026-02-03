@@ -90,52 +90,49 @@ export async function getMe(): Promise<{
 
 // --- Dashboard ---
 
-import type { MetricsData, DoorEvent, Sensor } from "./types"
+import type { MetricsData, SensorEvent, Sensor } from "./types"
 
 export async function getMetrics(): Promise<MetricsData> {
-  const [metricsRes, hourlyRes, doorRes] = await Promise.all([
+  const [metricsRes, hourlyRes, sensorRes] = await Promise.all([
     request<{
       totalEvents: number
-      openDoors: number
-      uniqueCards: number
+      openSensors: number
       sensorsOnline: number
     }>("/dashboard/metrics"),
     request<{
       hourlyActivity: { hour: string; events: number }[]
     }>("/dashboard/hourly-activity"),
     request<{
-      doorActivity: { door: string; events: number }[]
-    }>("/dashboard/door-activity"),
+      sensorActivity: { sensor: string; events: number }[]
+    }>("/dashboard/sensor-activity"),
   ])
 
   return {
     totalEvents: metricsRes.totalEvents,
-    openDoors: metricsRes.openDoors,
-    uniqueCards: metricsRes.uniqueCards,
+    openSensors: metricsRes.openSensors,
     sensorsOnline: metricsRes.sensorsOnline,
     hourlyActivity: hourlyRes.hourlyActivity,
-    doorActivity: doorRes.doorActivity,
+    sensorActivity: sensorRes.sensorActivity,
   }
 }
 
 export async function getEvents(
   limit = 10
-): Promise<DoorEvent[]> {
+): Promise<SensorEvent[]> {
   const res = await request<{
     data: {
       id: string
-      doorId: string
-      doorName: string
+      sensorId: string
+      sensorName: string
+      sensorLocation: string
       status: "open" | "closed"
-      timestamp: string
-      cardId: string
-      cardHolder?: string
+      detectedAt: string
     }[]
   }>(`/events?limit=${limit}`)
 
   return res.data.map((e) => ({
     ...e,
-    timestamp: new Date(e.timestamp),
+    detectedAt: new Date(e.detectedAt),
   }))
 }
 
@@ -147,7 +144,6 @@ export async function getSensors(): Promise<Sensor[]> {
       id: string
       name: string
       location: string
-      doorId: string
       mqttBroker: string | null
       mqttPort: number
       mqttTopic: string
@@ -166,9 +162,6 @@ export async function getSensors(): Promise<Sensor[]> {
 export async function createSensor(data: {
   name: string
   location: string
-  door_id: number
-  mqtt_broker?: string
-  mqtt_port?: number
   mqtt_topic: string
 }): Promise<Sensor> {
   const res = await request<{
@@ -176,7 +169,6 @@ export async function createSensor(data: {
       id: string
       name: string
       location: string
-      doorId: string
       mqttBroker: string | null
       mqttPort: number
       mqttTopic: string
@@ -195,23 +187,11 @@ export async function createSensor(data: {
 }
 
 export async function testMqttConnection(
-  broker: string,
-  port: number,
   topic: string
 ): Promise<{ success: boolean; message: string }> {
   return request("/mqtt/test", {
     method: "POST",
-    body: JSON.stringify({ broker, port, topic }),
+    body: JSON.stringify({ topic }),
   })
 }
 
-// --- Doors ---
-
-export async function getDoors(): Promise<
-  { id: string; name: string; slug: string; location: string | null }[]
-> {
-  const res = await request<{
-    data: { id: string; name: string; slug: string; location: string | null }[]
-  }>("/doors")
-  return res.data
-}

@@ -1,18 +1,16 @@
-export interface DoorEvent {
+export interface SensorEvent {
   id: string
-  doorId: string
-  doorName: string
+  sensorId: string
+  sensorName: string
+  sensorLocation: string
   status: "open" | "closed"
-  timestamp: Date
-  cardId: string
-  cardHolder?: string
+  detectedAt: Date
 }
 
 export interface Sensor {
   id: string
   name: string
   location: string
-  doorId: string
   mqttTopic: string
   status: "online" | "offline"
   lastSeen?: Date
@@ -20,9 +18,8 @@ export interface Sensor {
 
 export interface MetricsData {
   totalEvents: number
-  openDoors: number
-  uniqueCards: number
+  openSensors: number
   sensorsOnline: number
   hourlyActivity: { hour: string; events: number }[]
-  doorActivity: { door: string; events: number }[]
+  sensorActivity: { sensor: string; events: number }[]
 }

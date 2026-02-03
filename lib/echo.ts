@@ -29,6 +29,15 @@ export function getEcho(): Echo<"reverb"> {
     wssPort: Number(process.env.NEXT_PUBLIC_REVERB_PORT ?? 8080),
     forceTLS,
     enabledTransports: forceTLS ? ["wss"] : ["ws", "wss"],
+    enableLogging: true,
+  })
+
+  console.log("[Echo] Configuration:", {
+    broadcaster: "reverb",
+    key: process.env.NEXT_PUBLIC_REVERB_APP_KEY,
+    wsHost: process.env.NEXT_PUBLIC_REVERB_HOST,
+    wsPort: process.env.NEXT_PUBLIC_REVERB_PORT,
+    forceTLS,
   })
 
   return echoInstance

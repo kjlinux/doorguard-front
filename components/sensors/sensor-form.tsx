@@ -9,12 +9,9 @@ import { Loader2, Check, X, Wifi, WifiOff } from "lucide-react"
 import { testMqttConnection } from "@/lib/api"
 
 interface SensorFormData {
-  name: string
+  doorName: string
   location: string
-  doorId: string
-  mqttBroker: string
-  mqttTopic: string
-  mqttPort: string
+  topicSlug: string
 }
 
 interface SensorFormProps {
@@ -23,13 +20,15 @@ interface SensorFormProps {
 
 export function SensorForm({ onSave }: SensorFormProps) {
   const [formData, setFormData] = useState<SensorFormData>({
-    name: "",
+    doorName: "",
     location: "",
-    doorId: "",
-    mqttBroker: "",
-    mqttTopic: "",
-    mqttPort: "1883",
+    topicSlug: "",
   })
+
+  // Generate full MQTT topic from slug
+  const mqttTopic = formData.topicSlug
+    ? `doorguard/sensor/${formData.topicSlug}/event`
+    : ""
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<"success" | "failed" | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -37,6 +36,17 @@ export function SensorForm({ onSave }: SensorFormProps) {
   const handleChange = (field: keyof SensorFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setTestResult(null)
+
+    // Auto-generate slug from door name if doorName changes and slug is empty or was auto-generated
+    if (field === "doorName" && value) {
+      const slug = value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remove accents
+        .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric with dashes
+        .replace(/^-+|-+$/g, "") // Remove leading/trailing dashes
+      setFormData((prev) => ({ ...prev, topicSlug: slug }))
+    }
   }
 
   const handleTestConnection = async () => {
@@ -44,11 +54,7 @@ export function SensorForm({ onSave }: SensorFormProps) {
     setTestResult(null)
 
     try {
-      const result = await testMqttConnection(
-        formData.mqttBroker,
-        parseInt(formData.mqttPort, 10) || 1883,
-        formData.mqttTopic
-      )
+      const result = await testMqttConnection(mqttTopic)
       setTestResult(result.success ? "success" : "failed")
     } catch {
       setTestResult("failed")
@@ -58,25 +64,24 @@ export function SensorForm({ onSave }: SensorFormProps) {
 
   const handleSave = async () => {
     setIsSaving(true)
-    await onSave(formData)
+    await onSave({
+      doorName: formData.doorName,
+      location: formData.location,
+      mqttTopic,
+    })
     setIsSaving(false)
     setFormData({
-      name: "",
+      doorName: "",
       location: "",
-      doorId: "",
-      mqttBroker: "",
-      mqttTopic: "",
-      mqttPort: "1883",
+      topicSlug: "",
     })
     setTestResult(null)
   }
 
   const isFormValid =
-    formData.name &&
+    formData.doorName &&
     formData.location &&
-    formData.doorId &&
-    formData.mqttBroker &&
-    formData.mqttTopic
+    formData.topicSlug
 
   return (
     <Card className="border-border bg-card">
@@ -92,14 +97,14 @@ export function SensorForm({ onSave }: SensorFormProps) {
           <h3 className="text-sm font-medium text-foreground">Details du capteur</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-card-foreground">
-                Nom du capteur
+              <Label htmlFor="doorName" className="text-card-foreground">
+                Nom de la porte
               </Label>
               <Input
-                id="name"
-                placeholder="Capteur entree principale"
-                value={formData.name}
-                onChange={(e) => handleChange("name", e.target.value)}
+                id="doorName"
+                placeholder="Entree principale"
+                value={formData.doorName}
+                onChange={(e) => handleChange("doorName", e.target.value)}
                 className="bg-input border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
@@ -115,61 +120,39 @@ export function SensorForm({ onSave }: SensorFormProps) {
                 className="bg-input border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="doorId" className="text-card-foreground">
-                ID de la porte
-              </Label>
-              <Input
-                id="doorId"
-                placeholder="porte-001"
-                value={formData.doorId}
-                onChange={(e) => handleChange("doorId", e.target.value)}
-                className="bg-input border-border text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
           </div>
         </div>
 
         {/* MQTT Configuration */}
         <div className="space-y-4 pt-4 border-t border-border">
           <h3 className="text-sm font-medium text-foreground">Configuration MQTT</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="mqttBroker" className="text-card-foreground">
-                Adresse du broker
-              </Label>
+          <div className="space-y-2">
+            <Label htmlFor="topicSlug" className="text-card-foreground">
+              Sujet MQTT
+            </Label>
+            <div className="flex items-center gap-0 border border-border rounded-md overflow-hidden bg-input">
+              <span className="px-3 py-2 text-sm font-mono text-muted-foreground bg-muted/50">
+                doorguard/sensor/
+              </span>
               <Input
-                id="mqttBroker"
-                placeholder="mqtt.exemple.com"
-                value={formData.mqttBroker}
-                onChange={(e) => handleChange("mqttBroker", e.target.value)}
-                className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+                id="topicSlug"
+                placeholder="entree-principale"
+                value={formData.topicSlug}
+                onChange={(e) => handleChange("topicSlug", e.target.value)}
+                className="border-0 flex-1 font-mono text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
               />
+              <span className="px-3 py-2 text-sm font-mono text-muted-foreground bg-muted/50">
+                /event
+              </span>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="mqttPort" className="text-card-foreground">
-                Port
-              </Label>
-              <Input
-                id="mqttPort"
-                placeholder="1883"
-                value={formData.mqttPort}
-                onChange={(e) => handleChange("mqttPort", e.target.value)}
-                className="bg-input border-border text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="mqttTopic" className="text-card-foreground">
-                Sujet MQTT
-              </Label>
-              <Input
-                id="mqttTopic"
-                placeholder="doorguard/capteurs/entree-principale"
-                value={formData.mqttTopic}
-                onChange={(e) => handleChange("mqttTopic", e.target.value)}
-                className="bg-input border-border text-foreground placeholder:text-muted-foreground font-mono text-sm"
-              />
-            </div>
+            {mqttTopic && (
+              <p className="text-xs text-muted-foreground">
+                Topic complet : <code className="bg-muted px-1.5 py-0.5 rounded font-mono">{mqttTopic}</code>
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Le topic MQTT sera utilisé par le capteur IoT pour publier les événements
+            </p>
           </div>
         </div>
 
@@ -178,7 +161,7 @@ export function SensorForm({ onSave }: SensorFormProps) {
           <Button
             variant="outline"
             onClick={handleTestConnection}
-            disabled={!formData.mqttBroker || !formData.mqttTopic || isTesting}
+            disabled={!formData.topicSlug || isTesting}
             className="gap-2 bg-transparent"
           >
             {isTesting ? (

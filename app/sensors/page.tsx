@@ -37,20 +37,14 @@ export default function SensorsPage() {
   }, [router])
 
   const handleSaveSensor = async (formData: {
-    name: string
+    doorName: string
     location: string
-    doorId: string
-    mqttBroker: string
     mqttTopic: string
-    mqttPort: string
   }) => {
     try {
       const newSensor = await createSensor({
-        name: formData.name,
+        door_name: formData.doorName,
         location: formData.location,
-        door_id: parseInt(formData.doorId, 10),
-        mqtt_broker: formData.mqttBroker,
-        mqtt_port: parseInt(formData.mqttPort, 10) || 1883,
         mqtt_topic: formData.mqttTopic,
       })
 
@@ -58,7 +52,7 @@ export default function SensorsPage() {
 
       toast({
         title: "Capteur ajoute",
-        description: `${formData.name} a ete enregistre avec succes.`,
+        description: `${formData.doorName} a ete enregistre avec succes.`,
       })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erreur lors de l'enregistrement"
