@@ -9,12 +9,16 @@ import { DoorActivityChart } from "@/components/dashboard/door-activity-chart"
 import { DoorEventsTable } from "@/components/dashboard/door-events-table"
 import { isAuthenticated, getMetrics, getEvents } from "@/lib/api"
 import { DoorEvent, MetricsData } from "@/lib/types"
+import { useDoorEvents } from "@/hooks/use-door-events"
 
 export default function DashboardPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [events, setEvents] = useState<DoorEvent[]>([])
+  const [fetchedEvents, setFetchedEvents] = useState<DoorEvent[]>([])
   const [metrics, setMetrics] = useState<MetricsData | null>(null)
+
+  // Real-time events via WebSocket (merges with fetched events)
+  const { events, connected } = useDoorEvents(fetchedEvents)
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -29,7 +33,7 @@ export default function DashboardPage() {
           getEvents(10),
         ])
         setMetrics(metricsData)
-        setEvents(eventsData)
+        setFetchedEvents(eventsData)
       } catch {
         router.push("/")
         return
@@ -39,18 +43,15 @@ export default function DashboardPage() {
 
     fetchData()
 
+    // Keep polling for metrics (events come in real-time via Echo)
     const interval = setInterval(async () => {
       try {
-        const [metricsData, eventsData] = await Promise.all([
-          getMetrics(),
-          getEvents(10),
-        ])
+        const metricsData = await getMetrics()
         setMetrics(metricsData)
-        setEvents(eventsData)
       } catch {
         // silently ignore polling errors
       }
-    }, 5000)
+    }, 15000)
 
     return () => clearInterval(interval)
   }, [router])
@@ -89,7 +90,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Events Table */}
-          <DoorEventsTable events={events} />
+          <DoorEventsTable events={events} connected={connected} />
         </div>
       </main>
     </div>

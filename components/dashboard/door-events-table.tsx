@@ -7,9 +7,10 @@ import { DoorOpen, DoorClosed, CreditCard, Clock } from "lucide-react"
 
 interface DoorEventsTableProps {
   events: DoorEvent[]
+  connected?: boolean
 }
 
-export function DoorEventsTable({ events }: DoorEventsTableProps) {
+export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], {
       hour: "2-digit",
@@ -37,8 +38,9 @@ export function DoorEventsTable({ events }: DoorEventsTableProps) {
               Activite d'acces aux portes en temps reel
             </p>
           </div>
-          <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-            En direct
+          <Badge variant="outline" className={`text-xs ${connected ? "border-green-500/30 text-green-500" : "border-primary/30 text-primary"}`}>
+            <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1.5 ${connected ? "bg-green-500 animate-pulse" : "bg-muted-foreground"}`} />
+            {connected ? "En direct" : "Connexion..."}
           </Badge>
         </div>
       </CardHeader>
