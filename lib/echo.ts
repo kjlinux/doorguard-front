@@ -30,6 +30,8 @@ export function getEcho(): Echo<"reverb"> {
     forceTLS,
     enabledTransports: forceTLS ? ["wss"] : ["ws", "wss"],
     enableLogging: true,
+    cluster: "",
+    disableStats: true,
   })
 
   console.log("[Echo] Configuration:", {
