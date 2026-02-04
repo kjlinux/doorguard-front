@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Loader2, Check, X, Wifi, WifiOff } from "lucide-react"
-import { testMqttConnection } from "@/lib/api"
+import { Loader2 } from "lucide-react"
 
 interface SensorFormData {
   doorName: string
@@ -29,13 +28,10 @@ export function SensorForm({ onSave }: SensorFormProps) {
   const mqttTopic = formData.topicSlug
     ? `doorguard/sensor/${formData.topicSlug}/event`
     : ""
-  const [isTesting, setIsTesting] = useState(false)
-  const [testResult, setTestResult] = useState<"success" | "failed" | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
   const handleChange = (field: keyof SensorFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    setTestResult(null)
 
     // Auto-generate slug from door name if doorName changes and slug is empty or was auto-generated
     if (field === "doorName" && value) {
@@ -47,19 +43,6 @@ export function SensorForm({ onSave }: SensorFormProps) {
         .replace(/^-+|-+$/g, "") // Remove leading/trailing dashes
       setFormData((prev) => ({ ...prev, topicSlug: slug }))
     }
-  }
-
-  const handleTestConnection = async () => {
-    setIsTesting(true)
-    setTestResult(null)
-
-    try {
-      const result = await testMqttConnection(mqttTopic)
-      setTestResult(result.success ? "success" : "failed")
-    } catch {
-      setTestResult("failed")
-    }
-    setIsTesting(false)
   }
 
   const handleSave = async () => {
@@ -75,7 +58,6 @@ export function SensorForm({ onSave }: SensorFormProps) {
       location: "",
       topicSlug: "",
     })
-    setTestResult(null)
   }
 
   const isFormValid =
@@ -154,48 +136,6 @@ export function SensorForm({ onSave }: SensorFormProps) {
               Le topic MQTT sera utilisé par le capteur IoT pour publier les événements
             </p>
           </div>
-        </div>
-
-        {/* Connection Test */}
-        <div className="flex items-center gap-4 pt-4 border-t border-border">
-          <Button
-            variant="outline"
-            onClick={handleTestConnection}
-            disabled={!formData.topicSlug || isTesting}
-            className="gap-2 bg-transparent"
-          >
-            {isTesting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Test en cours...
-              </>
-            ) : (
-              <>
-                <Wifi className="h-4 w-4" />
-                Tester la connexion
-              </>
-            )}
-          </Button>
-
-          {testResult && (
-            <div
-              className={`flex items-center gap-2 text-sm ${
-                testResult === "success" ? "text-success" : "text-destructive"
-              }`}
-            >
-              {testResult === "success" ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Connexion reussie
-                </>
-              ) : (
-                <>
-                  <X className="h-4 w-4" />
-                  Connexion echouee
-                </>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Save Button */}

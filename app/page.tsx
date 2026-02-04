@@ -1,39 +1,46 @@
-"use client"
+"use client";
 
-import React from "react"
+import React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DoorOpen, Loader2, Eye, EyeOff } from "lucide-react"
-import { login } from "@/lib/api"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { DoorOpen, Loader2, Eye, EyeOff } from "lucide-react";
+import { login } from "@/lib/api";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    setIsLoading(true)
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
     try {
-      await login(email, password)
-      router.push("/dashboard")
+      await login(email, password);
+      router.push("/dashboard");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Identifiants invalides"
-      setError(message)
+      const message =
+        err instanceof Error ? err.message : "Identifiants invalides";
+      setError(message);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <main className="min-h-screen flex items-center justify-center p-4">
@@ -43,20 +50,30 @@ export default function LoginPage() {
             <div className="p-2 bg-primary/10 rounded-lg">
               <DoorOpen className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-semibold text-foreground">DoorGuard</h1>
+            <h1 className="text-2xl font-semibold text-foreground">
+              DoorGuard
+            </h1>
           </div>
-          <p className="text-muted-foreground text-sm">Plateforme de surveillance des acces</p>
+          <p className="text-muted-foreground text-sm">
+            Plateforme de surveillance des acces
+          </p>
         </div>
 
         <Card className="border-border bg-card">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-xl text-card-foreground">Connexion</CardTitle>
-            <CardDescription>Entrez vos identifiants pour acceder au tableau de bord</CardDescription>
+            <CardTitle className="text-xl text-card-foreground">
+              Connexion
+            </CardTitle>
+            <CardDescription>
+              Entrez vos identifiants pour acceder au tableau de bord
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-card-foreground">Email</Label>
+                <Label htmlFor="email" className="text-card-foreground">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -68,7 +85,9 @@ export default function LoginPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-card-foreground">Mot de passe</Label>
+                <Label htmlFor="password" className="text-card-foreground">
+                  Mot de passe
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -84,14 +103,16 @@ export default function LoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
 
-              {error && (
-                <p className="text-destructive text-sm">{error}</p>
-              )}
+              {error && <p className="text-destructive text-sm">{error}</p>}
 
               <Button
                 type="submit"
@@ -108,15 +129,9 @@ export default function LoginPage() {
                 )}
               </Button>
             </form>
-
-            <div className="mt-6 pt-4 border-t border-border">
-              <p className="text-xs text-muted-foreground text-center">
-                Identifiants de demo : admin@doorguard.io / password
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
     </main>
-  )
+  );
 }

@@ -43,7 +43,7 @@ export default function SensorsPage() {
   }) => {
     try {
       const newSensor = await createSensor({
-        door_name: formData.doorName,
+        name: formData.doorName,
         location: formData.location,
         mqtt_topic: formData.mqttTopic,
       })
