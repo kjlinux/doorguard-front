@@ -26,66 +26,62 @@ export function useSensorEvents(initialEvents: SensorEvent[] = []) {
     if (initializedRef.current) return
     initializedRef.current = true
 
-    console.log("[useSensorEvents] Initializing WebSocket connection...")
-    const echo = getEcho()
-    const channel = echo.channel("sensor-events")
+    try {
+      console.log("[useSensorEvents] Initializing WebSocket connection...")
+      const echo = getEcho()
+      console.log("[useSensorEvents] Echo instance obtained")
+      const channel = echo.channel("sensor-events")
 
-    console.log("[useSensorEvents] Channel created:", channel)
+      console.log("[useSensorEvents] Channel created, subscribing...")
 
-    channel
-      .subscribed(() => {
-        console.log("[useSensorEvents] ✅ Successfully subscribed to sensor-events channel")
-        setConnected(true)
-      })
-      .listen(".sensor.event.created", (raw: RawSensorEvent) => {
-        console.log("[useSensorEvents] 🔔 Event received:", raw)
-        const event: SensorEvent = {
-          ...raw,
-          detectedAt: new Date(raw.detectedAt),
-        }
-        console.log("[useSensorEvents] Processed event:", event)
-
-        // Play notification sound
-        try {
-          const audio = new Audio("/notification.mp3")
-          audio.volume = 0.5
-          audio.play().catch((error) => {
-            console.warn("[useSensorEvents] ⚠️ Could not play notification sound:", error)
-          })
-        } catch (error) {
-          console.warn("[useSensorEvents] ⚠️ Audio error:", error)
-        }
-
-        // Show toast notification
-        const statusText = event.status === "open" ? "Ouvert" : "Fermé"
-        const statusEmoji = event.status === "open" ? "🚪" : "🔒"
-
-        toast.success(`${statusEmoji} ${event.sensorName}`, {
-          description: `${event.sensorLocation} - ${statusText}`,
-          duration: 5000,
+      channel
+        .subscribed(() => {
+          console.log("[useSensorEvents] Subscribed to sensor-events channel")
+          setConnected(true)
         })
-
-        setEvents((prev) => {
-          // Avoid duplicates
-          if (prev.some((e) => e.id === event.id)) {
-            console.log("[useSensorEvents] ⚠️ Duplicate event ignored:", event.id)
-            return prev
+        .listen(".sensor.event.created", (raw: RawSensorEvent) => {
+          console.log("[useSensorEvents] Event received:", raw)
+          const event: SensorEvent = {
+            ...raw,
+            detectedAt: new Date(raw.detectedAt),
           }
-          // Prepend and cap at 50
-          const newEvents = [event, ...prev].slice(0, 50)
-          console.log("[useSensorEvents] ✅ Events updated. Total:", newEvents.length)
-          return newEvents
-        })
-      })
 
-    // Listen for errors
-    channel.error((error: Error) => {
-      console.error("[useSensorEvents] ❌ Channel error:", error)
-    })
+          try {
+            const audio = new Audio("/notification.mp3")
+            audio.volume = 0.5
+            audio.play().catch(() => {})
+          } catch {
+            // ignore audio errors
+          }
+
+          const statusText = event.status === "open" ? "Ouvert" : "Ferme"
+          const statusEmoji = event.status === "open" ? ">" : "x"
+
+          toast.success(`${statusEmoji} ${event.sensorName}`, {
+            description: `${event.sensorLocation} - ${statusText}`,
+            duration: 5000,
+          })
+
+          setEvents((prev) => {
+            if (prev.some((e) => e.id === event.id)) return prev
+            return [event, ...prev].slice(0, 50)
+          })
+        })
+
+      channel.error((error: Error) => {
+        console.error("[useSensorEvents] Channel error:", error)
+      })
+    } catch (err) {
+      console.error("[useSensorEvents] INIT ERROR:", err)
+    }
 
     return () => {
-      console.log("[useSensorEvents] Cleaning up WebSocket connection...")
-      echo.leaveChannel("sensor-events")
+      try {
+        const echo = getEcho()
+        echo.leaveChannel("sensor-events")
+      } catch {
+        // ignore cleanup errors
+      }
       setConnected(false)
       initializedRef.current = false
     }
