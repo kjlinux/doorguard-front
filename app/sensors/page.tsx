@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Header } from "@/components/dashboard/header"
 import { SensorForm } from "@/components/sensors/sensor-form"
 import { SensorList } from "@/components/sensors/sensor-list"
-import { isAuthenticated, getSensors, createSensor } from "@/lib/api"
+import { isAuthenticated, getSensors, createSensor, updateSensor, deleteSensor } from "@/lib/api"
 import { Sensor } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
@@ -64,6 +64,42 @@ export default function SensorsPage() {
     }
   }
 
+  const handleUpdateSensor = async (id: number, data: { name: string; location: string }) => {
+    try {
+      const updated = await updateSensor(id, data)
+      setSensors((prev) => prev.map((s) => (s.id === id ? updated : s)))
+      toast({
+        title: "Capteur modifie",
+        description: `${data.name} a ete mis a jour.`,
+      })
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erreur lors de la modification"
+      toast({
+        title: "Erreur",
+        description: message,
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteSensor = async (id: number) => {
+    try {
+      await deleteSensor(id)
+      setSensors((prev) => prev.filter((s) => s.id !== id))
+      toast({
+        title: "Capteur supprime",
+        description: "Le capteur a ete supprime avec succes.",
+      })
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erreur lors de la suppression"
+      toast({
+        title: "Erreur",
+        description: message,
+        variant: "destructive",
+      })
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -89,7 +125,7 @@ export default function SensorsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SensorForm onSave={handleSaveSensor} />
-          <SensorList sensors={sensors} />
+          <SensorList sensors={sensors} onUpdate={handleUpdateSensor} onDelete={handleDeleteSensor} />
         </div>
       </main>
 

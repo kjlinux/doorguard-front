@@ -297,6 +297,36 @@ export async function createSensor(data: {
   }
 }
 
+export async function updateSensor(
+  id: number,
+  data: { name?: string; location?: string; mqtt_topic?: string }
+): Promise<Sensor> {
+  const res = await request<{
+    data: {
+      id: number
+      name: string
+      location: string
+      mqttBroker: string | null
+      mqttPort: number
+      mqttTopic: string
+      status: "online" | "offline"
+      lastSeen: string | null
+    }
+  }>(`/sensors/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  })
+
+  return {
+    ...res.data,
+    lastSeen: res.data.lastSeen ? new Date(res.data.lastSeen) : undefined,
+  }
+}
+
+export async function deleteSensor(id: number): Promise<void> {
+  await request(`/sensors/${id}`, { method: "DELETE" })
+}
+
 // --- MQTT Commands ---
 
 export async function sendMqttCommand(

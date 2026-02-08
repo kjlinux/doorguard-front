@@ -7,6 +7,7 @@ import {
   isAuthenticated,
   getDoors,
   createDoor,
+  updateDoor,
   deleteDoor,
   getSensors,
   getBadges,
@@ -58,6 +59,8 @@ import {
   Power,
   RotateCcw,
   Unlock,
+  Unlink,
+  Link,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -77,6 +80,14 @@ export default function DoorsPage() {
   // Badge assignment dialog
   const [assignDoorId, setAssignDoorId] = useState<number | null>(null)
   const [selectedBadgeIds, setSelectedBadgeIds] = useState<number[]>([])
+
+  // Sensor reassignment dialog
+  const [reassignDoorId, setReassignDoorId] = useState<number | null>(null)
+  const [reassignSensorId, setReassignSensorId] = useState<string>("")
+
+  // Capteurs deja attaches a une porte
+  const usedSensorIds = doors.filter((d) => d.sensorId).map((d) => d.sensorId)
+  const availableSensors = sensors.filter((s) => !usedSensorIds.includes(s.id))
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -104,6 +115,16 @@ export default function DoorsPage() {
     fetchAll()
   }, [router])
 
+  // Quand on selectionne un capteur, remplir nom et location
+  const handleSensorChange = (value: string) => {
+    setSensorId(value)
+    const sensor = sensors.find((s) => String(s.id) === value)
+    if (sensor) {
+      setName(sensor.name)
+      setLocation(sensor.location)
+    }
+  }
+
   const handleCreate = async () => {
     if (!name) return
     setIsSaving(true)
@@ -121,7 +142,9 @@ export default function DoorsPage() {
         location: location || undefined,
         sensor_id: sensorId ? Number(sensorId) : null,
       })
-      setDoors((prev) => [newDoor, ...prev])
+      // Refresh pour avoir les relations
+      const doorsData = await getDoors()
+      setDoors(doorsData)
       setName("")
       setLocation("")
       setSensorId("")
@@ -144,11 +167,35 @@ export default function DoorsPage() {
     }
   }
 
+  const handleDetachSensor = async (door: Door) => {
+    try {
+      await updateDoor(door.id, { sensor_id: null })
+      const doorsData = await getDoors()
+      setDoors(doorsData)
+      toast.success("Capteur detache", { description: `${door.name} n'a plus de capteur` })
+    } catch {
+      toast.error("Erreur lors du detachement")
+    }
+  }
+
+  const handleReassignSensor = async () => {
+    if (!reassignDoorId || !reassignSensorId) return
+    try {
+      await updateDoor(reassignDoorId, { sensor_id: Number(reassignSensorId) })
+      const doorsData = await getDoors()
+      setDoors(doorsData)
+      setReassignDoorId(null)
+      setReassignSensorId("")
+      toast.success("Capteur assigne")
+    } catch {
+      toast.error("Erreur lors de l'assignation du capteur")
+    }
+  }
+
   const handleAssignBadges = async () => {
     if (!assignDoorId || selectedBadgeIds.length === 0) return
     try {
       await assignBadgesToDoor(assignDoorId, selectedBadgeIds)
-      // Refresh doors
       const doorsData = await getDoors()
       setDoors(doorsData)
       setAssignDoorId(null)
@@ -211,41 +258,51 @@ export default function DoorsPage() {
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="text-lg text-card-foreground">Ajouter une porte</CardTitle>
-              <CardDescription>Configurer une nouvelle porte avec capteur</CardDescription>
+              <CardDescription>Selectionnez un capteur pour pre-remplir les informations</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-card-foreground">Nom</Label>
+                <Label className="text-card-foreground">Capteur associe</Label>
+                <Select value={sensorId} onValueChange={handleSensorChange}>
+                  <SelectTrigger className="bg-input border-border">
+                    <SelectValue placeholder="Selectionner un capteur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSensors.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.name} - {s.location}
+                      </SelectItem>
+                    ))}
+                    {availableSensors.length === 0 && (
+                      <SelectItem value="_none" disabled>
+                        Aucun capteur disponible
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                {availableSensors.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Tous les capteurs sont deja rattaches a une porte.
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-card-foreground">Nom de la porte</Label>
                 <Input
-                  placeholder="Entree principale"
+                  placeholder="Rempli automatiquement par le capteur"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+                  disabled
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-card-foreground">Emplacement</Label>
                 <Input
-                  placeholder="Batiment A"
+                  placeholder="Rempli automatiquement par le capteur"
                   value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+                  disabled
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-card-foreground">Capteur associe</Label>
-                <Select value={sensorId} onValueChange={setSensorId}>
-                  <SelectTrigger className="bg-input border-border">
-                    <SelectValue placeholder="Selectionner un capteur" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sensors.map((s) => (
-                      <SelectItem key={s.id} value={String(s.id)}>
-                        {s.name} ({s.location})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
               <Button
                 onClick={handleCreate}
@@ -293,15 +350,38 @@ export default function DoorsPage() {
                             </div>
                             <div>
                               <h4 className="font-medium text-foreground">{door.name}</h4>
-                              <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                              <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1 flex-wrap">
                                 {door.location && (
                                   <span className="flex items-center gap-1">
                                     <MapPin className="h-3.5 w-3.5" /> {door.location}
                                   </span>
                                 )}
-                                {door.sensor && (
+                                {door.sensor ? (
                                   <span className="flex items-center gap-1">
-                                    <Radio className="h-3.5 w-3.5" /> {door.sensor.name}
+                                    <Radio className="h-3.5 w-3.5" />
+                                    {door.sensor.name}
+                                    <span className={`h-1.5 w-1.5 rounded-full ${door.sensor.status === "online" ? "bg-green-500" : "bg-muted-foreground"}`} />
+                                    <button
+                                      onClick={() => handleDetachSensor(door)}
+                                      className="ml-1 text-muted-foreground hover:text-destructive transition-colors"
+                                      title="Detacher le capteur"
+                                    >
+                                      <Unlink className="h-3.5 w-3.5" />
+                                    </button>
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1 text-warning">
+                                    <Radio className="h-3.5 w-3.5" /> Aucun capteur
+                                    <button
+                                      onClick={() => {
+                                        setReassignDoorId(door.id)
+                                        setReassignSensorId("")
+                                      }}
+                                      className="ml-1 text-primary hover:text-primary/80 transition-colors"
+                                      title="Assigner un capteur"
+                                    >
+                                      <Link className="h-3.5 w-3.5" />
+                                    </button>
                                   </span>
                                 )}
                                 <span className="flex items-center gap-1">
@@ -311,7 +391,6 @@ export default function DoorsPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-1">
-                            {/* Commands */}
                             {door.sensorId && (
                               <>
                                 <Button
@@ -350,7 +429,7 @@ export default function DoorsPage() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Supprimer la porte ?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    La porte "{door.name}" sera definitivement supprimee.
+                                    La porte &quot;{door.name}&quot; sera definitivement supprimee.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -446,6 +525,44 @@ export default function DoorsPage() {
           </div>
         </div>
       </main>
+
+      {/* Sensor reassignment dialog */}
+      <Dialog open={!!reassignDoorId} onOpenChange={(open) => { if (!open) { setReassignDoorId(null); setReassignSensorId("") } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assigner un capteur</DialogTitle>
+            <DialogDescription>
+              Selectionnez le capteur a rattacher a cette porte
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Select value={reassignSensorId} onValueChange={setReassignSensorId}>
+              <SelectTrigger className="bg-input border-border">
+                <SelectValue placeholder="Selectionner un capteur" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableSensors.map((s) => (
+                  <SelectItem key={s.id} value={String(s.id)}>
+                    {s.name} - {s.location}
+                  </SelectItem>
+                ))}
+                {availableSensors.length === 0 && (
+                  <SelectItem value="_none" disabled>
+                    Aucun capteur disponible
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={handleReassignSensor}
+              disabled={!reassignSensorId}
+              className="w-full"
+            >
+              Assigner
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
