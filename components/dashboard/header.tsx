@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { DoorOpen, LogOut, Plus, LayoutDashboard } from "lucide-react"
+import { DoorOpen, LogOut, Radio, LayoutDashboard, CreditCard, ClipboardList } from "lucide-react"
 import Link from "next/link"
 import { logout } from "@/lib/api"
 
 interface HeaderProps {
-  currentPage: "dashboard" | "sensors"
+  currentPage: "dashboard" | "doors" | "badges" | "sensors" | "access-logs"
 }
 
 export function Header({ currentPage }: HeaderProps) {
@@ -17,6 +17,14 @@ export function Header({ currentPage }: HeaderProps) {
     await logout()
     router.push("/")
   }
+
+  const navItems = [
+    { key: "dashboard", href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+    { key: "doors", href: "/doors", label: "Portes", icon: DoorOpen },
+    { key: "badges", href: "/badges", label: "Badges", icon: CreditCard },
+    { key: "sensors", href: "/sensors", label: "Capteurs", icon: Radio },
+    { key: "access-logs", href: "/access-logs", label: "Logs", icon: ClipboardList },
+  ]
 
   return (
     <header className="border-b border-border bg-card">
@@ -31,26 +39,18 @@ export function Header({ currentPage }: HeaderProps) {
             </Link>
 
             <nav className="hidden md:flex items-center gap-1">
-              <Link href="/dashboard">
-                <Button
-                  variant={currentPage === "dashboard" ? "secondary" : "ghost"}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <LayoutDashboard className="h-4 w-4" />
-                  Tableau de bord
-                </Button>
-              </Link>
-              <Link href="/sensors">
-                <Button
-                  variant={currentPage === "sensors" ? "secondary" : "ghost"}
-                  size="sm"
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Capteurs
-                </Button>
-              </Link>
+              {navItems.map((item) => (
+                <Link key={item.key} href={item.href}>
+                  <Button
+                    variant={currentPage === item.key ? "secondary" : "ghost"}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </Button>
+                </Link>
+              ))}
             </nav>
           </div>
 

@@ -7,18 +7,17 @@ import { MetricsCards } from "@/components/dashboard/metrics-cards"
 import { ActivityChart } from "@/components/dashboard/activity-chart"
 import { DoorActivityChart } from "@/components/dashboard/door-activity-chart"
 import { DoorEventsTable } from "@/components/dashboard/door-events-table"
-import { isAuthenticated, getMetrics, getEvents } from "@/lib/api"
-import { SensorEvent, MetricsData } from "@/lib/types"
-import { useSensorEvents } from "@/hooks/use-sensor-events"
+import { isAuthenticated, getMetrics, getAccessLogs } from "@/lib/api"
+import { AccessLog, MetricsData } from "@/lib/types"
+import { useAccessLogs } from "@/hooks/use-access-logs"
 
 export default function DashboardPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [fetchedEvents, setFetchedEvents] = useState<SensorEvent[]>([])
+  const [fetchedLogs, setFetchedLogs] = useState<AccessLog[]>([])
   const [metrics, setMetrics] = useState<MetricsData | null>(null)
 
-  // Real-time events via WebSocket (merges with fetched events)
-  const { events, connected } = useSensorEvents(fetchedEvents)
+  const { logs, connected } = useAccessLogs(fetchedLogs)
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -28,12 +27,12 @@ export default function DashboardPage() {
 
     const fetchData = async () => {
       try {
-        const [metricsData, eventsData] = await Promise.all([
+        const [metricsData, logsData] = await Promise.all([
           getMetrics(),
-          getEvents(10),
+          getAccessLogs(10),
         ])
         setMetrics(metricsData)
-        setFetchedEvents(eventsData)
+        setFetchedLogs(logsData)
       } catch {
         router.push("/")
         return
@@ -43,7 +42,6 @@ export default function DashboardPage() {
 
     fetchData()
 
-    // Keep polling for metrics (events come in real-time via Echo)
     const interval = setInterval(async () => {
       try {
         const metricsData = await getMetrics()
@@ -75,22 +73,19 @@ export default function DashboardPage() {
         <div className="mb-6">
           <h1 className="text-xl font-semibold text-foreground">Tableau de bord</h1>
           <p className="text-sm text-muted-foreground">
-            Surveillez les evenements d'acces aux portes en temps reel
+            Controle d'acces par badge RFID en temps reel
           </p>
         </div>
 
         <div className="space-y-6">
-          {/* Metrics Overview */}
           <MetricsCards metrics={metrics} />
 
-          {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ActivityChart data={metrics.hourlyActivity} />
-            <DoorActivityChart data={metrics.sensorActivity} />
+            <DoorActivityChart data={metrics.doorActivity} />
           </div>
 
-          {/* Events Table */}
-          <DoorEventsTable events={events} connected={connected} />
+          <DoorEventsTable logs={logs} connected={connected} />
         </div>
       </main>
     </div>

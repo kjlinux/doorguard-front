@@ -2,15 +2,22 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { SensorEvent } from "@/lib/types"
-import { DoorOpen, DoorClosed, Clock } from "lucide-react"
+import { AccessLog } from "@/lib/types"
+import { ShieldCheck, ShieldX, Clock, MapPin, User } from "lucide-react"
 
-interface DoorEventsTableProps {
-  events: SensorEvent[]
+interface AccessLogsTableProps {
+  logs: AccessLog[]
   connected?: boolean
 }
 
-export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
+const statusConfig: Record<string, { label: string; color: string; bgColor: string }> = {
+  accepted: { label: "Accepte", color: "text-success", bgColor: "bg-success/10 border-success/20" },
+  refused: { label: "Refuse", color: "text-destructive", bgColor: "bg-destructive/10 border-destructive/20" },
+  rejected: { label: "Rejete", color: "text-destructive", bgColor: "bg-destructive/10 border-destructive/20" },
+  forced_open: { label: "Force", color: "text-warning", bgColor: "bg-warning/10 border-warning/20" },
+}
+
+export function DoorEventsTable({ logs, connected }: AccessLogsTableProps) {
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], {
       hour: "2-digit",
@@ -32,10 +39,10 @@ export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-base font-medium text-card-foreground">
-              Evenements recents
+              Derniers acces
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Activite d'acces aux portes en temps reel
+              Tentatives d'acces par badge en temps reel
             </p>
           </div>
           <Badge variant="outline" className={`text-xs ${connected ? "border-green-500/30 text-green-500" : "border-primary/30 text-primary"}`}>
@@ -50,6 +57,9 @@ export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Utilisateur
+                </th>
+                <th className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Porte
                 </th>
                 <th className="text-left py-3 px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -61,45 +71,54 @@ export function DoorEventsTable({ events, connected }: DoorEventsTableProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {events.slice(0, 10).map((event) => (
-                <tr key={event.id} className="hover:bg-secondary/30 transition-colors">
-                  <td className="py-3 px-2">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-secondary rounded-md">
-                        {event.status === "open" ? (
-                          <DoorOpen className="h-4 w-4 text-warning" />
-                        ) : (
-                          <DoorClosed className="h-4 w-4 text-muted-foreground" />
-                        )}
+              {logs.slice(0, 10).map((log) => {
+                const config = statusConfig[log.status] || statusConfig.refused
+                return (
+                  <tr key={log.id} className="hover:bg-secondary/30 transition-colors">
+                    <td className="py-3 px-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-secondary rounded-md">
+                          {log.status === "accepted" || log.status === "forced_open" ? (
+                            <ShieldCheck className="h-4 w-4 text-success" />
+                          ) : (
+                            <ShieldX className="h-4 w-4 text-destructive" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm text-foreground font-medium">{log.holderName}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{log.badgeUid}</p>
+                        </div>
                       </div>
-                      <span className="text-sm text-foreground font-medium">
-                        {event.sensorName}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-2">
-                    <Badge
-                      variant={event.status === "open" ? "default" : "secondary"}
-                      className={
-                        event.status === "open"
-                          ? "bg-warning/10 text-warning border-warning/20"
-                          : "bg-secondary text-muted-foreground"
-                      }
-                    >
-                      {event.status === "open" ? "Ouverte" : "Fermee"}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                    </td>
+                    <td className="py-3 px-2">
                       <div>
-                        <p className="text-sm text-foreground">{formatTime(event.detectedAt)}</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(event.detectedAt)}</p>
+                        <p className="text-sm text-foreground">{log.doorName}</p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          {log.doorLocation}
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-3 px-2">
+                      <Badge
+                        variant="default"
+                        className={config.bgColor + " " + config.color}
+                      >
+                        {config.label}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-foreground">{formatTime(log.respondedAt)}</p>
+                          <p className="text-xs text-muted-foreground">{formatDate(log.respondedAt)}</p>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
