@@ -162,7 +162,14 @@ export default function AccessLogsPage() {
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="text-sm text-muted-foreground font-mono">{log.badgeUid}</span>
+                            {log.badgeUid === "REMOTE" ? (
+                              <Badge variant="outline" className="text-xs bg-primary/10 border-primary/20 text-primary">
+                                <Zap className="h-3 w-3 mr-1" />
+                                Commande distante
+                              </Badge>
+                            ) : (
+                              <span className="text-sm text-muted-foreground font-mono">{log.badgeUid}</span>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <div>
