@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Header } from "@/components/dashboard/header"
 import {
@@ -63,6 +63,8 @@ import {
   Link,
 } from "lucide-react"
 import { toast } from "sonner"
+import { useSensorStatus } from "@/hooks/use-sensor-status"
+import { Wifi, Monitor } from "lucide-react"
 
 export default function DoorsPage() {
   const router = useRouter()
@@ -84,6 +86,10 @@ export default function DoorsPage() {
   // Sensor reassignment dialog
   const [reassignDoorId, setReassignDoorId] = useState<number | null>(null)
   const [reassignSensorId, setReassignSensorId] = useState<string>("")
+
+  // Sensor status dialog
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false)
+  const { statusData, clearStatus } = useSensorStatus()
 
   // Capteurs deja attaches a une porte
   const usedSensorIds = doors.filter((d) => d.sensorId).map((d) => d.sensorId)
@@ -221,7 +227,11 @@ export default function DoorsPage() {
     try {
       const res = await sendMqttCommand(sId, command)
       if (res.success) {
-        toast.success(res.message)
+        if (command === "STATUS") {
+          toast.info("Commande STATUS envoyee, en attente de reponse...")
+        } else {
+          toast.success(res.message)
+        }
       } else {
         toast.error(res.message)
       }
@@ -229,6 +239,21 @@ export default function DoorsPage() {
       toast.error("Erreur lors de l'envoi de la commande")
     }
   }
+
+  // Ouvrir le dialog quand on recoit une reponse STATUS
+  useEffect(() => {
+    if (statusData) {
+      setStatusDialogOpen(true)
+      // Mettre a jour le status du sensor dans la liste des portes
+      setDoors((prev) =>
+        prev.map((d) =>
+          d.sensor && String(d.sensor.id) === statusData.sensorId
+            ? { ...d, sensor: { ...d.sensor, status: "online" as const, lastSeen: new Date(statusData.lastSeen) } }
+            : d
+        )
+      )
+    }
+  }, [statusData])
 
   if (isLoading) {
     return (
@@ -525,6 +550,76 @@ export default function DoorsPage() {
           </div>
         </div>
       </main>
+
+      {/* Sensor status dialog */}
+      <Dialog open={statusDialogOpen} onOpenChange={(open) => { if (!open) { setStatusDialogOpen(false); clearStatus() } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Monitor className="h-5 w-5" />
+              Status du capteur {statusData?.sensorName}
+            </DialogTitle>
+            <DialogDescription>
+              {statusData?.sensorLocation}
+            </DialogDescription>
+          </DialogHeader>
+          {statusData && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+                <span className="text-sm font-medium text-green-500">En ligne</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {statusData.data.ssid && (
+                  <div className="p-3 rounded-md bg-secondary/50">
+                    <p className="text-muted-foreground flex items-center gap-1"><Wifi className="h-3.5 w-3.5" /> SSID</p>
+                    <p className="font-medium">{statusData.data.ssid}</p>
+                  </div>
+                )}
+                {statusData.data.ip && (
+                  <div className="p-3 rounded-md bg-secondary/50">
+                    <p className="text-muted-foreground">IP</p>
+                    <p className="font-mono font-medium">{statusData.data.ip}</p>
+                  </div>
+                )}
+                {statusData.data.rssi !== undefined && (
+                  <div className="p-3 rounded-md bg-secondary/50">
+                    <p className="text-muted-foreground">Signal WiFi</p>
+                    <p className="font-medium">{String(statusData.data.rssi)} dBm</p>
+                  </div>
+                )}
+                {statusData.data.freeHeap !== undefined && (
+                  <div className="p-3 rounded-md bg-secondary/50">
+                    <p className="text-muted-foreground">RAM libre</p>
+                    <p className="font-medium">{String(statusData.data.freeHeap)} bytes</p>
+                  </div>
+                )}
+                {statusData.data.uptime && (
+                  <div className="p-3 rounded-md bg-secondary/50">
+                    <p className="text-muted-foreground">Uptime</p>
+                    <p className="font-medium">{String(statusData.data.uptime)}</p>
+                  </div>
+                )}
+                {statusData.data.chipModel && (
+                  <div className="p-3 rounded-md bg-secondary/50">
+                    <p className="text-muted-foreground">Chip</p>
+                    <p className="font-medium">{String(statusData.data.chipModel)}</p>
+                  </div>
+                )}
+                {statusData.data.cpuFreq !== undefined && (
+                  <div className="p-3 rounded-md bg-secondary/50">
+                    <p className="text-muted-foreground">CPU</p>
+                    <p className="font-medium">{String(statusData.data.cpuFreq)} MHz</p>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Derniere activite: {new Date(statusData.lastSeen).toLocaleString()}
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Sensor reassignment dialog */}
       <Dialog open={!!reassignDoorId} onOpenChange={(open) => { if (!open) { setReassignDoorId(null); setReassignSensorId("") } }}>
